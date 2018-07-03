@@ -10,32 +10,28 @@ FAIL_COUNT = 1  # 校验失败次数， 超过次数删除代理
 
 
 class ProxyCheckThread(ProxyManager, Thread):
-    def __init__(self, queue, item_dict):
+    def __init__(self, queue):
         ProxyManager.__init__(self)
         Thread.__init__(self)
         self.log = LogHandler('proxy_check', file=False)  # 多线程同时写一个日志文件会有问题
         self.queue = queue
-        self.item_dict = item_dict
 
     def run(self):
-        self.db.change_table(self.useful_proxy_queue)
         while self.queue.qsize():
             proxy = self.queue.get()
-            count = self.item_dict[proxy]
-            if validate_useful_proxy(proxy):
+            count = proxy.get('count')
+            if validate_useful_proxy(proxy.get('ip')):
                 # 验证通过计数器减1
                 if count and int(count) > 0:
-                    self.db.put(proxy, num=int(count) - 1)
-                else:
-                    pass
+                    self.db.inckey('proxy_info_%s' % proxy.get('ip'), 'count', int(count) - 1)
                 self.log.info('ProxyCheck: {} validation pass'.format(proxy))
             else:
                 self.log.info('ProxyCheck: {} validation fail'.format(proxy))
                 if count and int(count) + 1 >= FAIL_COUNT:
                     self.log.info('ProxyCheck: {} fail too many, delete!'.format(proxy))
-                    self.db.delete(proxy)
+                    # 删除 ip
                 else:
-                    self.db.put(proxy, num=int(count) + 1)
+                    self.db.inckey('proxy_info_%s' % proxy.get('ip'), 'count', int(count) + 1)
             self.queue.task_done()
 
 
@@ -43,7 +39,6 @@ class ProxyValidSchedule(ProxyManager, object):
     def __init__(self):
         ProxyManager.__init__(self)
         self.queue = Queue()
-        self.proxy_item = dict()
 
     def __valid_proxy(self, threads=10):
         """
@@ -51,7 +46,7 @@ class ProxyValidSchedule(ProxyManager, object):
         """
         thread_list = list()
         for index in range(threads):
-            thread_list.append(ProxyCheckThread(self.queue, self.proxy_item))
+            thread_list.append(ProxyCheckThread(self.queue))
 
         for thread in thread_list:
             thread.daemon = True
@@ -72,10 +67,7 @@ class ProxyValidSchedule(ProxyManager, object):
                 self.put_queue()
 
     def put_queue(self):
-        self.db.change_table(self.useful_proxy_queue)
-        self.proxy_item = self.db.get_all()
-        for item in self.proxy_item:
-            self.queue.put(item)
+        self.queue = Queue(self.db.get_all_userful_proxy_info())
 
     @staticmethod
     def run():

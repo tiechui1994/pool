@@ -15,18 +15,6 @@ class DbClient(object, metaclass=Singleton):
         raw_proxy： 存放原始的代理；
         useful_proxy_queue： 存放检验后的代理；
 
-    抽象方法定义：
-        get(proxy): 返回proxy的信息；
-        put(proxy): 存入一个代理；
-        pop(): 弹出一个代理
-        exists(proxy)： 判断代理是否存在
-        get_number(raw_proxy): 返回代理总数（一个计数器）；
-        update(proxy, num): 修改代理属性计数器的值;
-        delete(proxy): 删除指定代理；
-        get_all(): 返回所有代理；
-        change_table(name): 切换 table or collection or hash;
-
-
         所有方法需要相应类去具体实现：
             SSDB：SsdbClient.py
             REDIS:RedisClient.py
@@ -46,35 +34,36 @@ class DbClient(object, metaclass=Singleton):
                                                           host=self.config.db_host,
                                                           port=self.config.db_port)
 
-    def get(self, key, **kwargs):
-        return self.client.get(key, **kwargs)
+    def get_random_proxy(self, name):
+        return self.client.get_random_proxy(name)
 
-    def put(self, key, **kwargs):
-        return self.client.put(key, **kwargs)
+    def get_al1_proxy(self, name):
+        return self.client.get_al1_proxy(name)
 
-    def update(self, key, value, **kwargs):
-        return self.client.update(key, value, **kwargs)
+    def put_userful_proxy(self, proxy):
+        return self.client.put_userful_proxy(proxy)
 
-    def delete(self, key, **kwargs):
-        return self.client.delete(key, **kwargs)
+    def put_raw_proxy(self, proxy_info_map):
+        return self.client.put_raw_proxy(proxy_info_map)
 
-    def exists(self, key, **kwargs):
-        return self.client.exists(key, **kwargs)
+    def get_proxy_info_by_ip(self, ip):
+        return self.client.get_proxy_info_by_ip(ip)
 
-    def pop(self, **kwargs):
-        return self.client.pop(**kwargs)
+    def pop_proxy(self, name):
+        return self.client.pop_proxy(name)
 
-    def get_all(self):
-        return self.client.get_all()
+    def delete_proxy_info(self, key):
+        return self.client.delete_proxy_info(key)
 
-    def change_table(self, name):
-        self.client.change_table(name)
+    def get_all_userful_proxy_info(self):
+        return self.client.get_all_userful_proxy_info()
 
-    def get_number(self):
-        return self.client.get_number()
+    def inckey(self, name, key, value):
+        return self.client.inckey(name, key, value)
+
+    def is_exists_proxy(self, name, value):
+        return self.client.is_exists_proxy(name, value)
 
 
 if __name__ == "__main__":
-    account = DbClient()
-    account.change_table('use')
-    account.put('ac')
+    pass

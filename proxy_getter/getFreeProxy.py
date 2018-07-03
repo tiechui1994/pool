@@ -47,7 +47,11 @@ class GetFreeProxy(object):
             ul_list = html_tree.xpath('//ul[@class="l2"]')
             for ul in ul_list:
                 try:
-                    yield ':'.join(ul.xpath('.//li/text()')[0:2])
+                    yield {
+                        'ip': ':'.join(ul.xpath('.//li/text()')[0:2]),
+                        'from': 'data5u',
+                        'count': 1
+                    }
                 except Exception as e:
                     print(e)
 
