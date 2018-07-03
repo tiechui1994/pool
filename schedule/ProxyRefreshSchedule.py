@@ -29,7 +29,7 @@ class ProxyRefreshSchedule(ProxyManager):
         remaining_proxies = self.get_all()
         while raw_proxy_item:
             if (raw_proxy_item not in remaining_proxies) and validate_useful_proxy(raw_proxy_item):
-                self.db.put_userful_proxy(raw_proxy_item)
+                self.db.put_useful_proxy(raw_proxy_item)
                 self.log.info('ProxyRefreshSchedule: %s validation pass' % raw_proxy_item)
             else:
                 # 删除掉无用的代理的详情

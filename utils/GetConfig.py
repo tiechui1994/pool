@@ -36,11 +36,12 @@ class GetConfig(object):
 
     @LazyProperty
     def host_ip(self):
-        return self.config_file.get('HOST','ip')
+        return self.config_file.get('host', 'ip')
 
     @LazyProperty
     def host_port(self):
-        return int(self.config_file.get('HOST', 'port'))
+        return int(self.config_file.get('host', 'port'))
+
 
 if __name__ == '__main__':
     gg = GetConfig()

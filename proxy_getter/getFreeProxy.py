@@ -1,10 +1,9 @@
 import re
 import urllib3
-from utils.utilFunction import robust_crawl, get_html_tree
+from utils.utilFunction import get_html_tree
 from utils.WebRequest import WebRequest
 from utils.utilFunction import verify_proxy_format
 
-# for debug to disable insecureWarning
 urllib3.disable_warnings()  # urlib3的一个方法
 
 """
@@ -22,46 +21,11 @@ urllib3.disable_warnings()  # urlib3的一个方法
 
 
 class GetFreeProxy(object):
-    """
-    proxy getter
-    """
-
-    def __init__(self):
-        pass
-
-    @staticmethod
-    def freeProxyFirst(page=10):
-        """
-        无忧代理 http://www.data5u.com/
-        几乎没有能用的
-        :param page: 页数
-        :return:
-        """
-        url_list = [
-            'http://www.data5u.com/',
-            'http://www.data5u.com/free/gngn/index.shtml',
-            'http://www.data5u.com/free/gnpt/index.shtml'
-        ]
-        for url in url_list:
-            html_tree = get_html_tree(url)  # xml格式的html
-            ul_list = html_tree.xpath('//ul[@class="l2"]')
-            for ul in ul_list:
-                try:
-                    yield {
-                        'ip': ':'.join(ul.xpath('.//li/text()')[0:2]),
-                        'from': 'data5u',
-                        'count': 1
-                    }
-                except Exception as e:
-                    print(e)
-
     @staticmethod
     def freeProxySecond(area=33, page=1):
         """
         代理66 http://www.66ip.cn/
         :param area: 抓取代理页数，page=1北京代理页，page=2上海代理页......
-        :param page: 翻页
-        :return:
         """
         area = 33 if area > 33 else area
         for area_index in range(1, area + 1):
@@ -72,24 +36,12 @@ class GetFreeProxy(object):
                 if len(tr_list) == 0:
                     continue
                 for tr in tr_list:
-                    yield tr.xpath("./td[1]/text()")[0] + ":" + tr.xpath("./td[2]/text()")[0]
+                    yield {
+                        'ip': tr.xpath("./td[1]/text()")[0] + ":" + tr.xpath("./td[2]/text()")[0],
+                        'from': '66ip',
+                        'count': 0
+                    }
                 break
-
-    @staticmethod
-    def freeProxyThird(days=1):
-        """
-        ip181 http://www.ip181.com/  不能用了
-        :param days:
-        :return:
-        """
-        url = 'http://www.ip181.com/'
-        html_tree = get_html_tree(url)
-        try:
-            tr_list = html_tree.xpath('//tr')[1:]
-            for tr in tr_list:
-                yield ':'.join(tr.xpath('./td/text()')[0:2])
-        except Exception as e:
-            pass
 
     @staticmethod
     def freeProxyFourth(page_count=2):
@@ -108,7 +60,11 @@ class GetFreeProxy(object):
                 proxy_list = tree.xpath('.//table[@id="ip_list"]//tr[position()>1]')
                 for proxy in proxy_list:
                     try:
-                        yield ':'.join(proxy.xpath('./td/text()')[0:2])
+                        yield {
+                            'ip': ':'.join(proxy.xpath('./td/text()')[0:2]),
+                            'from': 'xicidaili',
+                            'count': 0
+                        }
                     except Exception as e:
                         pass
 
@@ -133,7 +89,11 @@ class GetFreeProxy(object):
                 # :符号裸放在td下，其他放在div span p中，先分割找出ip，再找port
                 ip_addr = ''.join(each_proxy.xpath(xpath_str))
                 port = each_proxy.xpath(".//span[contains(@class, 'port')]/text()")[0]
-                yield '{}:{}'.format(ip_addr, port)
+                yield {
+                    'ip': '{}:{}'.format(ip_addr, port),
+                    'from': 'goubanjia',
+                    'count': 0
+                }
             except Exception as e:
                 pass
 
@@ -148,7 +108,11 @@ class GetFreeProxy(object):
         try:
             res = request.get(url).json()
             for row in res['RESULT']['rows']:
-                yield '{}:{}'.format(row['ip'], row['port'])
+                yield {
+                    'ip': '{}:{}'.format(row['ip'], row['port']),
+                    'from': 'xdaili',
+                    'count': 0
+                }
         except Exception as e:
             pass
 
@@ -167,7 +131,11 @@ class GetFreeProxy(object):
                 tree = get_html_tree(page_url)
                 proxy_list = tree.xpath('.//table//tr')
                 for tr in proxy_list[1:]:
-                    yield ':'.join(tr.xpath('./td/text()')[0:2])
+                    yield {
+                        'ip': ':'.join(tr.xpath('./td/text()')[0:2]),
+                        'from': 'kuaidaili',
+                        'count': 0
+                    }
 
     @staticmethod
     def freeProxyEight():
@@ -184,7 +152,11 @@ class GetFreeProxy(object):
             r = request.get(url, use_proxy=True)
             proxies = re.findall(r'<td>(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})</td>[\w\W].*<td>(\d+)</td>', r.text)
             for proxy in proxies:
-                yield ':'.join(proxy)
+                yield {
+                    'ip': ':'.join(proxy),
+                    'from': 'mimiip',
+                    'count': 0
+                }
 
     @staticmethod
     def freeProxyNinth():
@@ -198,7 +170,11 @@ class GetFreeProxy(object):
             r = request.get(url)
             proxies = re.findall('data-ip="(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})".+?>(\d+)</td>', r.text)
             for proxy in proxies:
-                yield ':'.join(proxy)
+                yield {
+                    'ip': ':'.join(proxy),
+                    'from': 'coderbusy',
+                    'count': 0
+                }
 
     @staticmethod
     def freeProxyTen():
@@ -212,7 +188,11 @@ class GetFreeProxy(object):
             r = request.get(url)
             proxies = re.findall(r'<td>(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})</td>[\s\S]*?<td>(\d+)</td>', r.text)
             for proxy in proxies:
-                yield ":".join(proxy)
+                yield {
+                    'ip': ':'.join(proxy),
+                    'from': 'ip3366',
+                    'count': 0
+                }
 
     @staticmethod
     def freeProxyEleven():
@@ -232,7 +212,11 @@ class GetFreeProxy(object):
             proxies = re.findall(r'<td>\s*?(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})\s*?</td>[\s\S]*?<td>\s*?(\d+)\s*?</td>',
                                  r.text)
             for proxy in proxies:
-                yield ":".join(proxy)
+                yield {
+                    'ip': ":".join(proxy),
+                    'from': 'iphais',
+                    'count': 0
+                }
 
     @staticmethod
     def freeProxyTwelve(page_count=8):
@@ -244,13 +228,16 @@ class GetFreeProxy(object):
         """
         for i in range(1, page_count + 1):
             url = 'http://ip.jiangxianli.com/?page={}'.format(i)
-            # print(url)
             html_tree = get_html_tree(url)
             tr_list = html_tree.xpath("/html/body/div[1]/div/div[1]/div[2]/table/tbody/tr")
             if len(tr_list) == 0:
                 continue
             for tr in tr_list:
-                yield tr.xpath("./td[2]/text()")[0] + ":" + tr.xpath("./td[3]/text()")[0]
+                yield {
+                    'ip': tr.xpath("./td[2]/text()")[0] + ":" + tr.xpath("./td[3]/text()")[0],
+                    'from': 'jiangxianli',
+                    'count': 0
+                }
 
     @staticmethod
     def freeProxyWallFirst():
@@ -264,7 +251,11 @@ class GetFreeProxy(object):
             r = request.get(url)
             proxies = re.findall(r'<td>(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})</td>[\w\W]<td>(\d+)</td>', r.text)
             for proxy in proxies:
-                yield ':'.join(proxy)
+                yield {
+                    'ip': ':'.join(proxy),
+                    'from': 'proxy',
+                    'count': 0
+                }
 
     @staticmethod
     def freeProxyWallSecond():
@@ -279,7 +270,11 @@ class GetFreeProxy(object):
             r = request.get(url)
             proxies = re.findall(r"Proxy\('(.*?)'\)", r.text)
             for proxy in proxies:
-                yield base64.b64decode(proxy).decode()
+                yield {
+                    'ip': base64.b64decode(proxy).decode(),
+                    'from': 'english',
+                    'count': 0
+                }
 
     @staticmethod
     def freeProxyWallThird():
@@ -289,31 +284,15 @@ class GetFreeProxy(object):
             r = request.get(url)
             proxies = re.findall(r'<td>(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})</td>[\s\S]*?<td>(\d+)</td>', r.text)
             for proxy in proxies:
-                yield ':'.join(proxy)
+                yield {
+                    'ip': ':'.join(proxy),
+                    'from': 'proxylistplus',
+                    'count': 0
+                }
 
 
 if __name__ == '__main__':
     gg = GetFreeProxy()
-
-    # test_batch(gg.freeProxyFirst())
-
-    # test_batch(gg.freeProxySecond())
-
-    # test_batch(gg.freeProxyFourth())
-
-    # test_batch(gg.freeProxyFifth())
-
-    # test_batch(gg.freeProxySixth())
-
-    # test_batch(gg.freeProxySeventh())
-
-    # test_batch(gg.freeProxyEight())
-
-    # test_batch(gg.freeProxyNinth())
-
-    # test_batch(gg.freeProxyTen())
-
-    # test_batch(gg.freeProxyEleven())
 
     proxy_iter = gg.freeProxyTwelve()
     proxy_set = set()
