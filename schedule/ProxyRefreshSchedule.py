@@ -7,7 +7,6 @@ from manager.ProxyManager import ProxyManager
 from utils.utilFunction import validate_useful_proxy
 from utils.LogHandler import LogHandler
 
-
 logging.basicConfig()
 
 
@@ -24,24 +23,19 @@ class ProxyRefreshSchedule(ProxyManager):
         """
         验证raw_proxy_queue中的代理, 将可用的代理放入useful_proxy_queue
         """
-        self.db.change_table(self.raw_proxy_queue)
-        raw_proxy_item = self.db.pop()
+        raw_proxy_item = self.db.pop_proxy(self.raw_proxy_queue)
         self.log.info('ProxyRefreshSchedule: %s start validProxy' % time.ctime())
         # 计算剩余代理，用来减少重复计算
         remaining_proxies = self.get_all()
-        print('--->', remaining_proxies)
         while raw_proxy_item:
-            if isinstance(raw_proxy_item, bytes):
-                raw_proxy_item = raw_proxy_item.decode('utf-8')
-
             if (raw_proxy_item not in remaining_proxies) and validate_useful_proxy(raw_proxy_item):
-                self.db.change_table(self.useful_proxy_queue)
-                self.db.put(raw_proxy_item)
+                self.db.put_userful_proxy(raw_proxy_item)
                 self.log.info('ProxyRefreshSchedule: %s validation pass' % raw_proxy_item)
             else:
+                # 删除掉无用的代理的详情
+                self.db.delete_proxy_info('proxy_info_%s' % raw_proxy_item.decode('utf-8'))
                 self.log.info('ProxyRefreshSchedule: %s validation fail' % raw_proxy_item)
-            self.db.change_table(self.raw_proxy_queue)
-            raw_proxy_item = self.db.pop()
+                raw_proxy_item = self.db.pop_proxy(self.raw_proxy_queue)
             remaining_proxies = self.get_all()
         self.log.info('ProxyRefreshSchedule: %s validProxy complete' % time.ctime())
 

@@ -1,6 +1,16 @@
 import json
 import random
+
+import array
 import redis
+from utils.utilFunction import verify_proxy_format
+
+"""
+数据结构设计:
+    proxy_info_{ip}: hash 存储ip信息(ip, count, from)
+    raw_proxy: set 原始的ip
+    userful_proxy: set  存储验证后的ip
+"""
 
 
 class RedisClient(object):
@@ -8,62 +18,64 @@ class RedisClient(object):
         self.name = name
         self.__conn = redis.Redis(host=host, port=port, db=0)
 
-    def get(self):
-        """
-        get random result
-        """
-        key = self.__conn.hgetall(name=self.name)
-        rkey = random.choice(list(key.keys())) if key else None
-        if isinstance(rkey, bytes):
-            return rkey.decode('utf-8')
-        else:
-            return rkey
+    def get_random_proxy(self, name):
+        member = random.choice(self.__conn.smembers(name))
+        return member.decode('utf-8')
 
-    def put(self, key):
-        """
-        put an item
-        """
-        key = json.dumps(key) if isinstance(key, (dict, list)) else key
-        return self.__conn.hincrby(self.name, key, 1)
+    def get_al1_proxy(self, name):
+        return self.__conn.smembers(name)
 
-    def getvalue(self, key):
-        value = self.__conn.hget(self.name, key)
-        return value if value else None
+    def put_userful_proxy(self, proxy):
+        return self.__conn.sadd('userful_proxy', proxy)
 
-    def pop(self):
-        """
-        pop an item
-        """
-        key = self.get()
-        if key:
-            self.__conn.hdel(self.name, key)
-        return key
+    def put_raw_proxy(self, proxy_info_map):
+        proxy_ip = proxy_info_map.get('ip', None)
 
-    def delete(self, key):
-        """
-        delete an item
-        """
-        self.__conn.hdel(self.name, key)
+        if not proxy_ip:
+            raise TypeError('Missing parameter proxy')
 
-    def inckey(self, key, value):
-        self.__conn.hincrby(self.name, key, value)
+        pipeline = self.__conn.pipeline()
+        pipeline.hmset('proxy_info_%s' % proxy_ip, proxy_info_map)
+        pipeline.sadd('raw_proxy', proxy_ip)
+        pipeline.execute()
 
-    def get_all(self):
-        return [key.decode('utf-8') for key in self.__conn.hgetall(self.name).keys()]
+    def get_proxy_info_by_ip(self, ip):
+        if not ip or not verify_proxy_format(ip):
+            raise TypeError('Ip does not meet the requirements')
 
-    def get_status(self):
-        return self.__conn.hlen(self.name)
+        return self.__conn.hgetall('proxy_info_%s' % ip)
 
-    def change_table(self, name):
-        self.name = name
+    def get_all_userful_proxy_info(self):
+        items = self.__conn.sort('raw_proxy', by='xx', get=['proxy_info_*->ip', 'proxy_info_*->count'], groups=True)
 
-    def exists(self, key, **kwargs):
-        return self.__conn.exists(key)
+        return list(map(lambda item: {'ip': str(item[0]), 'count': int(item[1])}, items))
+
+    def pop_proxy(self, name):
+        return self.__conn.spop(name)
+
+    def delete_proxy_info(self, key):
+        return self.__conn.delete(key)
+
+    def inckey(self, name, key, value):
+        self.__conn.hincrby(name, key, value)
+
+    def is_exists_proxy(self, name, value):
+        return self.__conn.sismember(name, value)
 
 
 if __name__ == '__main__':
-    redis_con = RedisClient('proxy', 'localhost', 6379)
-    redis_con.change_table('raw_proxy')
-    redis_con.pop()
-    print(redis_con.get_status())
-    print(redis_con.get_all())
+    redis_con = RedisClient('proxy', 'localhost', 6399)
+    # proxy = {
+    #     'proxy': '%d.%d.%d.%d:%d' % (
+    #         random.randint(10, 255), random.randint(10, 255),
+    #         random.randint(10, 255), random.randint(10, 255),
+    #         random.randint(10, 10000)),
+    #     'from': ''.join(random.sample('0123456789abcdefghijklmnopqrstuvwxyz', 5)),
+    #     'count': random.randint(1, 3)
+    # }
+    # redis_con.put_raw_proxy(proxy)
+    #
+    # res = redis_con.get_proxy_info_by_ip(proxy.get('proxy'))
+    # print(res, res.get(b'count'))
+
+    print(redis_con.get_all_userful_proxy_info())

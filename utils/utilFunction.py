@@ -80,3 +80,8 @@ def validate_useful_proxy(proxy):
     except Exception as e:
         # logger.error(str(e))
         return False
+
+if __name__ == '__main__':
+    print(validate_useful_proxy('108.61.57.77:3128'))
+    print(validate_useful_proxy('54.93.89.180:3128'))
+    print(validate_useful_proxy('23.95.47.86:3128'))
