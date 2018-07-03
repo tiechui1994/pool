@@ -28,7 +28,7 @@ def verify_proxy_format(proxy):
     return True if len(_proxy) == 1 and _proxy[0] == proxy else False
 
 
-def get_html_tree(url,):
+def get_html_tree(url, ):
     """
     获取html树
     """
@@ -48,18 +48,7 @@ def get_html_tree(url,):
     time.sleep(2)
 
     html = wr.get(url=url, header=header).content
-    return etree.HTML(html)  # ** 使用lxml解析html
-
-
-def tcp_connect(proxy):
-    """
-    TCP 三次握手
-    """
-    from socket import socket, AF_INET, SOCK_STREAM
-    s = socket(AF_INET, SOCK_STREAM)
-    ip, port = proxy.split(':')
-    result = s.connect_ex((ip, int(port)))
-    return True if result == 0 else False
+    return etree.HTML(html)  # 使用lxml解析html
 
 
 def validate_useful_proxy(proxy):
@@ -80,6 +69,7 @@ def validate_useful_proxy(proxy):
     except Exception as e:
         # logger.error(str(e))
         return False
+
 
 if __name__ == '__main__':
     print(validate_useful_proxy('108.61.57.77:3128'))

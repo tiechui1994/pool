@@ -29,7 +29,8 @@ class ProxyCheckThread(ProxyManager, Thread):
                 self.log.info('ProxyCheck: {} validation fail'.format(proxy))
                 if count and int(count) + 1 >= FAIL_COUNT:
                     self.log.info('ProxyCheck: {} fail too many, delete!'.format(proxy))
-                    # 删除 ip
+                    # 删除 ip 信息
+                    self.db.delete_proxy_info('proxy_info_%s' % proxy.get('ip'))
                 else:
                     self.db.inckey('proxy_info_%s' % proxy.get('ip'), 'count', int(count) + 1)
             self.queue.task_done()
@@ -67,7 +68,7 @@ class ProxyValidSchedule(ProxyManager, object):
                 self.put_queue()
 
     def put_queue(self):
-        self.queue = Queue(self.db.get_all_userful_proxy_info())
+        self.queue = Queue(self.db.get_all_useful_proxy_info())
 
     @staticmethod
     def run():
