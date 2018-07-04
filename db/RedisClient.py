@@ -10,8 +10,7 @@ import redis
 
 
 class RedisClient(object):
-    def __init__(self, name, host, port):
-        self.name = name
+    def __init__(self, host, port):
         self.__conn = redis.Redis(host=host, port=port, db=0)
 
     def get_random_proxy(self, name):
@@ -57,3 +56,15 @@ class RedisClient(object):
 
     def is_exists_proxy(self, name, value):
         return self.__conn.sismember(name, value)
+
+    def clear_all_data(self):
+        proxy_info = self.__conn.keys('proxy_info_*')
+        if len(proxy_info) > 0:
+            self.__conn.delete(*tuple(proxy_info))
+
+        self.__conn.delete('useful_proxy', 'raw_proxy')
+
+
+if __name__ == '__main__':
+    redis_con = RedisClient(host='127.0.0.1', port=6399)
+    redis_con.clear_all_data()

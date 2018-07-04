@@ -27,8 +27,7 @@ class DbClient(object, metaclass=Singleton):
         if "REDIS" == self.config.db_type:
             __type = "RedisClient"
         assert __type, 'type error, Not support db type: {}'.format(self.config.db_type)
-        self.client = getattr(__import__(__type), __type)(name=self.config.db_name,
-                                                          host=self.config.db_host,
+        self.client = getattr(__import__(__type), __type)(host=self.config.db_host,
                                                           port=self.config.db_port)
 
     def get_random_proxy(self, name):
@@ -60,6 +59,9 @@ class DbClient(object, metaclass=Singleton):
 
     def is_exists_proxy(self, name, value):
         return self.client.is_exists_proxy(name, value)
+
+    def clear_all_data(self):
+        return self.client.clear_all_data()
 
 
 if __name__ == "__main__":
