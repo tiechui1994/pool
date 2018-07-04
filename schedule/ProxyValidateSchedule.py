@@ -13,26 +13,31 @@ class ProxyCheckThread(ProxyManager, Thread):
     def __init__(self, queue):
         ProxyManager.__init__(self)
         Thread.__init__(self)
-        self.log = LogHandler('proxy_check', file=False)  # 多线程同时写一个日志文件会有问题
+        self.log = LogHandler('proxy_check', file=False)
         self.queue = queue
 
     def run(self):
         while self.queue.qsize():
             proxy = self.queue.get()
-            count = proxy.get('count')
-            if validate_useful_proxy(proxy.get('ip')):
+            count = int(proxy.get('count'))
+            ip = proxy.get('ip')
+
+            if validate_useful_proxy(ip):
+                self.log.info('ProxyCheck: {} validation pass'.format(ip))
                 # 验证通过计数器减1
                 if count and int(count) > 0:
-                    self.db.inckey('proxy_info_%s' % proxy.get('ip'), 'count', int(count) - 1)
-                self.log.info('ProxyCheck: {} validation pass'.format(proxy))
+                    self.db.inckey('proxy_info_%s' % ip, 'count', count - 1)
             else:
-                self.log.info('ProxyCheck: {} validation fail'.format(proxy))
+                self.log.info('ProxyCheck: {} validation fail'.format(ip))
                 if count and int(count) + 1 >= FAIL_COUNT:
-                    self.log.info('ProxyCheck: {} fail too many, delete!'.format(proxy))
-                    # 删除 ip 信息
-                    self.db.delete_proxy_info('proxy_info_%s' % proxy.get('ip'))
+                    self.log.info('ProxyCheck: {} fail too many, delete!'.format(ip))
+
+                    # 删除 ip 信息 和 useful_proxy当中的ip
+                    self.db.delete_proxy_info('proxy_info_%s' % ip)
+                    self.db.delete_proxy('useful_proxy', ip)
                 else:
-                    self.db.inckey('proxy_info_%s' % proxy.get('ip'), 'count', int(count) + 1)
+                    self.db.inckey('proxy_info_%s' % ip, 'count', count + 1)
+
             self.queue.task_done()
 
 

@@ -1,9 +1,5 @@
-import json
 import random
-
-import array
 import redis
-from utils.utilFunction import verify_proxy_format
 
 """
 数据结构设计:
@@ -52,6 +48,9 @@ class RedisClient(object):
 
     def delete_proxy_info(self, key):
         return self.__conn.delete(key)
+
+    def delete_proxy(self, name, ip):
+        return self.__conn.srem(name, [ip])
 
     def inckey(self, name, key, value):
         self.__conn.hincrby(name, key, value)

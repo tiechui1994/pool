@@ -49,6 +49,9 @@ class DbClient(object, metaclass=Singleton):
     def delete_proxy_info(self, key):
         return self.client.delete_proxy_info(key)
 
+    def delete_proxy(self, name, ip):
+        return self.client.delete_proxy(name, ip)
+
     def get_all_useful_proxy_info(self):
         return self.client.get_all_useful_proxy_info()
 
