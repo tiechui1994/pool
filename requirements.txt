@@ -1,5 +1,5 @@
 APScheduler==3.2.0
-requests==2.12.4
+urllib3==1.23
 lxml==3.7.2
 
 redis

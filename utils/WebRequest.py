@@ -1,16 +1,16 @@
-from requests.models import Response
-import requests
+from urllib3 import PoolManager
 import random
-import time
+
+from utils.utilClass import Singleton
 
 """
 典型的爬虫案例
 """
 
 
-class WebRequest(object):
-    def __init__(self, *args, **kwargs):
-        pass
+class WebRequest(object, metaclass=Singleton):
+    def __init__(self):
+        self.pool = PoolManager()
 
     @property
     def user_agent(self):
@@ -39,20 +39,18 @@ class WebRequest(object):
         return {'User-Agent': self.user_agent,
                 'Accept': '*/*',
                 'Connection': 'keep-alive',
-                'Accept-Language': 'zh-CN,zh;q=0.8'}
+                'Accept-Language': 'en-US,en;q=0.9'}
 
-    def get(self, url, header=None, retry_time=5, timeout=30,
-            retry_flag=list(), retry_interval=5, *args, **kwargs):
+    def get(self, url, header=None, retry_time=5,
+            timeout=30, encoding='utf-8'):
         """
         get method
         :param url: target url
         :param header: headers
         :param retry_time: retry time when network error
         :param timeout: network timeout
-        :param retry_flag: if retry_flag in content. do retry
         :param retry_interval: retry interval(second)
-        :param args:
-        :param kwargs:
+        :param encoding: 'utf-8'
         :return:
         """
         headers = self.header
@@ -60,16 +58,20 @@ class WebRequest(object):
             headers.update(header)
         while True:
             try:
-                html = requests.get(url, headers=headers, timeout=timeout)
-                if any(f in html.content for f in retry_flag):
+                response = self.pool.request('GET', url, headers=headers,
+                                             timeout=timeout, retries=retry_time)
+                print(response.data)
+                html = response.data.decode(encoding)
+                status = response.status
+                if status in range(500, 510):
                     raise Exception
                 return html
             except Exception as e:
                 print(e)
-                retry_time -= 1
-                if retry_time <= 0:
-                    # 多次请求失败
-                    resp = Response()
-                    resp.status_code = 200
-                    return resp
-                time.sleep(retry_interval)
+                return ''
+
+
+if __name__ == '__main__':
+    req_url = 'http://www.goubanjia.com/'
+    webreq = WebRequest()
+    print(webreq.get(req_url))
